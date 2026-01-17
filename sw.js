@@ -1,4 +1,4 @@
-const CACHE_NAME = 'keey-app-v2'; // تم تحديث الإصدار
+const CACHE_NAME = 'keey-app-v3'; // قمنا بتحديث الإصدار لإجبار المتصفح على التحديث
 const ASSETS = [
   './',
   './index.html',
@@ -6,7 +6,8 @@ const ASSETS = [
   './script.js',
   './manifest.json',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js',
+  'https://e.top4top.io/p_3669xvp3m1.jpg' // تمت إضافة الأيقونة لضمان عمل التثبيت
 ];
 
 // تثبيت التطبيق
@@ -29,7 +30,7 @@ self.addEventListener('activate', (e) => {
   return self.clients.claim();
 });
 
-// استراتيجية التشغيل: الشبكة أولاً ثم الكاش (لضمان التحديثات)
+// استراتيجية التشغيل: الشبكة أولاً ثم الكاش
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
