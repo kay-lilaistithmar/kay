@@ -13,31 +13,43 @@
     <link rel="stylesheet" href="style.css">
 
     <script>
-        // تسجيل Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-            .then(() => console.log('Service Worker Registered'))
-            .catch((err) => console.log('SW Error:', err));
-        }
-
-        // التقاط حدث التثبيت مبكراً (تم الإصلاح هنا)
+        // متغير عالمي لحفظ حدث التثبيت
         window.deferredPrompt = null;
+
+        // 1. التقاط الحدث فوراً (أهم جزء لإيقاف نافذة المتصفح الافتراضية)
         window.addEventListener('beforeinstallprompt', (e) => {
+            // منع ظهور نافذة كروم الافتراضية (إنشاء اختصار)
             e.preventDefault();
+            // حفظ الحدث لاستخدامه في الزر الخاص بك
             window.deferredPrompt = e;
-            
-            // ننتظر حتى تصبح الصفحة جاهزة لإظهار البانر
-            const showBanner = () => {
+            console.log('Installation event captured');
+
+            // محاولة إظهار البانر الخاص بك بمجرد جاهزية الصفحة
+            showCustomInstallBanner();
+        });
+
+        // دالة لإظهار البانر بأمان
+        function showCustomInstallBanner() {
+            // نتحقق مما إذا كانت الصفحة قد حملت العناصر
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    const banner = document.getElementById('installBanner');
+                    if (banner) banner.style.display = 'flex';
+                });
+            } else {
                 const banner = document.getElementById('installBanner');
                 if (banner) banner.style.display = 'flex';
-            };
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', showBanner);
-            } else {
-                showBanner();
             }
-        });
+        }
+
+        // 2. تسجيل Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then((reg) => console.log('SW Registered:', reg))
+                .catch((err) => console.log('SW Error:', err));
+            });
+        }
     </script>
 </head>
 <body>
@@ -48,7 +60,7 @@
             <h3>تثبيت تطبيق Keey</h3>
             <p>لتجربة أفضل وسرعة أعلى، قم بتثبيت التطبيق على جهازك.</p>
             <button id="installBtn" class="install-btn">تثبيت الآن</button>
-            <button onclick="closeInstallBanner()" class="skip-install-btn">تخطي</button>
+            <button onclick="document.getElementById('installBanner').style.display='none'" class="skip-install-btn">تخطي</button>
         </div>
     </div>
 
