@@ -13,48 +13,58 @@
     <link rel="stylesheet" href="style.css">
 
     <script>
-        // متغير عالمي لحفظ حدث التثبيت
-        window.deferredPrompt = null;
+        // متغير لحفظ حدث التثبيت
+        let deferredPrompt;
 
-        // 1. التقاط الحدث فوراً (أهم جزء لإيقاف نافذة المتصفح الافتراضية)
+        // 1. التقاط الحدث قبل ظهوره
         window.addEventListener('beforeinstallprompt', (e) => {
-            // منع ظهور نافذة كروم الافتراضية (إنشاء اختصار)
+            // منع ظهور نافذة الكروم الصغيرة فوراً
             e.preventDefault();
-            // حفظ الحدث لاستخدامه في الزر الخاص بك
-            window.deferredPrompt = e;
-            console.log('Installation event captured');
-
-            // محاولة إظهار البانر الخاص بك بمجرد جاهزية الصفحة
-            showCustomInstallBanner();
+            // حفظ الحدث لاستخدامه لاحقاً
+            deferredPrompt = e;
+            console.log('✅ تم التقاط حدث التثبيت جاهز للإطلاق');
+            
+            // إظهار نافذتك الخاصة
+            const banner = document.getElementById('installBanner');
+            if (banner) banner.style.display = 'flex';
         });
 
-        // دالة لإظهار البانر بأمان
-        function showCustomInstallBanner() {
-            // نتحقق مما إذا كانت الصفحة قد حملت العناصر
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    const banner = document.getElementById('installBanner');
-                    if (banner) banner.style.display = 'flex';
+        // 2. وظيفة زر التثبيت (مدمجة هنا لضمان العمل)
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('installBtn');
+            if(btn) {
+                btn.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        // إطلاق نافذة التثبيت الأصلية
+                        deferredPrompt.prompt();
+                        // انتظار رد المستخدم
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`User response: ${outcome}`);
+                        // تصفير المتغير
+                        deferredPrompt = null;
+                        // إخفاء البانر الخاص
+                        document.getElementById('installBanner').style.display = 'none';
+                    } else {
+                        console.log('❌ حدث التثبيت غير متوفر حالياً');
+                        alert('التثبيت غير متاح حالياً، ربما التطبيق مثبت بالفعل؟');
+                    }
                 });
-            } else {
-                const banner = document.getElementById('installBanner');
-                if (banner) banner.style.display = 'flex';
             }
-        }
+        });
 
-        // 2. تسجيل Service Worker
+        // 3. تسجيل Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                .then((reg) => console.log('SW Registered:', reg))
-                .catch((err) => console.log('SW Error:', err));
+                .then(reg => console.log('SW Registered'))
+                .catch(err => console.log('SW Error', err));
             });
         }
     </script>
 </head>
 <body>
 
-    <div id="installBanner" class="install-modal">
+    <div id="installBanner" class="install-modal" style="display: none;">
         <div class="install-content">
             <div class="install-icon"><img src="https://e.top4top.io/p_3669xvp3m1.jpg" style="width:60px; border-radius:10px;"></div>
             <h3>تثبيت تطبيق Keey</h3>
@@ -77,21 +87,14 @@
         <div class="modal-content" style="text-align: right;">
             <h3 style="text-align: center; margin-bottom: 20px;">طلب سحب أرباح</h3>
             <p>الرصيد الكلي: <span id="wTotalBalance" style="font-weight: bold; color: green;">0</span> IQD</p>
-            
-            <label style="display:block; margin-top:10px;">المبلغ المراد سحبه:</label>
-            <input type="number" id="wAmount" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:5px;" placeholder="أقل مبلغ 7000">
-
-            <label style="display:block; margin-top:10px;">طريقة السحب:</label>
-            <select id="wMethod" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:5px;">
-                <option value="zaincash" class="method-opt">زين كاش (ZainCash)</option>
-                <option value="mastercard" class="method-opt">ماستر كارد (MasterCard)</option>
-                <option value="fib" class="method-opt">FIB</option>
-                <option value="usdt" class="method-opt">USDT (TRC20)</option>
+            <input type="number" id="wAmount" style="width:100%; padding:10px; margin-bottom:10px;" placeholder="أقل مبلغ 7000">
+            <select id="wMethod" style="width:100%; padding:10px; margin-bottom:10px;">
+                <option value="zaincash">زين كاش (ZainCash)</option>
+                <option value="mastercard">ماستر كارد (MasterCard)</option>
+                <option value="fib">FIB</option>
+                <option value="usdt">USDT (TRC20)</option>
             </select>
-
-            <label style="display:block; margin-top:10px;">رقم المحفظة / البطاقة / العنوان:</label>
-            <input type="text" id="wAccount" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:5px;" placeholder="اكتب الرقم أو العنوان هنا">
-
+            <input type="text" id="wAccount" style="width:100%; padding:10px; margin-bottom:20px;" placeholder="اكتب الرقم أو العنوان هنا">
             <button onclick="submitWithdrawRequest()" style="background:var(--primary); width:100%;">تأكيد السحب</button>
             <button onclick="document.getElementById('withdrawModal').style.display='none'" style="background:#555; width:100%; margin-top:10px;">إلغاء</button>
         </div>
@@ -247,12 +250,6 @@
         <div class="nav-item" onclick="switchTab('reels')"><i class="fas fa-play-circle"></i> <span>Reels</span></div>
         <div class="nav-item" onclick="switchTab('wallet')"><i class="fas fa-wallet"></i> <span>المحفظة</span></div>
     </nav>
-
-    <style>
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        /* تعديل لعرض 5 عناصر حول الزر العائم */
-        .bottom-nav { justify-content: space-evenly; }
-    </style>
 
     <script src="script.js" type="module"></script>
 </body>
