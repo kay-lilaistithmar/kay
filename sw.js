@@ -1,5 +1,5 @@
-const CACHE_NAME = 'keey-app-v3'; // قمنا بتحديث الإصدار لإجبار المتصفح على التحديث
-const ASSETS = [
+const CACHE_NAME = 'keey-app-final-v5';
+const FILES_TO_CACHE = [
   './',
   './index.html',
   './style.css',
@@ -7,32 +7,54 @@ const ASSETS = [
   './manifest.json',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js',
-  'https://e.top4top.io/p_3669xvp3m1.jpg' // تمت إضافة الأيقونة لضمان عمل التثبيت
+  'https://e.top4top.io/p_3669xvp3m1.jpg'
 ];
 
-// تثبيت التطبيق
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-});
-
-// تفعيل الخدمة وتنظيف الكاش القديم
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
+// 1. تثبيت وحفظ الملفات فوراً
+self.addEventListener('install', (evt) => {
+  self.skipWaiting(); // تفعيل فوراً
+  evt.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('Caching offline page');
+      return cache.addAll(FILES_TO_CACHE);
     })
   );
-  return self.clients.claim();
 });
 
-// استراتيجية التشغيل: الشبكة أولاً ثم الكاش
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+// 2. تفعيل الخدمة وتنظيف القديم
+self.addEventListener('activate', (evt) => {
+  evt.waitUntil(
+    caches.keys().then((keyList) => {
+      return Promise.all(keyList.map((key) => {
+        if (key !== CACHE_NAME) {
+          return caches.delete(key);
+        }
+      }));
+    })
+  );
+  self.clients.claim();
+});
+
+// 3. استراتيجية الشبكة أولاً، ثم الكاش (لضمان عمل التطبيق أوفلاين)
+self.addEventListener('fetch', (evt) => {
+  // استثناء طلبات API أو الروابط الخارجية مثل Reels
+  if (evt.request.url.includes('http') && !evt.request.url.includes(self.location.origin)) {
+     // الروابط الخارجية نحاول جلبها، لو فشل لا يهم (مثل iframe)
+     return; 
+  }
+
+  evt.respondWith(
+    fetch(evt.request)
+      .catch(() => {
+        return caches.match(evt.request)
+          .then((response) => {
+            if (response) {
+              return response;
+            } else if (evt.request.mode === 'navigate') {
+              // إذا فشل كل شيء، ارجع للصفحة الرئيسية المحفوظة
+              return caches.match('./index.html');
+            }
+          });
+      })
   );
 });
