@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap');
+
+:root {
+    --primary: #5b247a;
+    --accent: #ff9800;
+    --bg: #f3f4f6;
+    --text: #333;
+    --success: #2ecc71;
+}
+
+body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    margin: 0;
+    padding-bottom: 90px;
+    color: var(--text);
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* === نافذة التثبيت (التعديل المهم هنا) === */
+.install-modal {
+    display: none; /* <--- مهم جداً: مخفي افتراضياً */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 99999; /* طبقة عليا جداً */
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.install-content {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    width: 85%;
+    max-width: 350px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: popUp 0.4s ease forwards;
+}
+
+@keyframes popUp {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.install-icon { font-size: 3rem; color: var(--primary); margin-bottom: 15px; }
+.install-btn {
+    background: var(--primary); color: white; border: none;
+    padding: 12px 30px; border-radius: 25px;
+    font-weight: bold; margin-top: 15px; width: 100%;
+    cursor: pointer; font-family: inherit;
+}
+.skip-install-btn {
+    background: transparent; color: #777; border: none;
+    margin-top: 15px; cursor: pointer; text-decoration: underline;
+    font-family: inherit; font-size: 0.9rem;
+}
+
+/* === باقي التنسيقات === */
+.tab-content { display: none !important; animation: fadeIn 0.4s ease-in-out; }
+.tab-content.active { display: block !important; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* الهيدر */
+.app-header {
+    background: linear-gradient(135deg, var(--primary), #3a0ca3);
+    padding: 15px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    color: white; border-radius: 0 0 20px 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+.avatar-circle { width: 45px; height: 45px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-left: 10px; }
+.user-info-header { display: flex; align-items: center; }
+
+/* البطاقات */
+.balance-card {
+    background: linear-gradient(45deg, #1e1e2e, #4a148c);
+    color: white; padding: 25px; border-radius: 20px;
+    text-align: center; margin: 20px; position: relative; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(74, 20, 140, 0.4);
+}
+
+.daily-counter-box { margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+.timer-anim { font-family: monospace; font-size: 1.2rem; color: var(--accent); font-weight: bold; margin-top: 5px; }
+.quick-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+.action-icon { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 15px; border-radius: 10px; cursor: pointer; }
+
+/* الباقات */
+.plans-container { padding: 0 20px 20px; }
+.plan-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #eee; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+.featured-plan { border: 2px solid var(--accent); transform: scale(1.02); }
+.badge { background: var(--accent); color: white; display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.8rem; margin-bottom: 10px; }
+.plan-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: var(--primary); }
+.plan-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.p-detail { color: #777; font-size: 0.8rem; display: block; }
+.p-val { font-weight: bold; font-size: 0.9rem; }
+.stock-info { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+.stock-bar { height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+.stock-fill { height: 100%; background: var(--success); }
+.stock-text { font-size: 0.75rem; color: #555; }
+
+button { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--primary); color: white; cursor: pointer; font-family: inherit; font-weight: bold; }
+
+/* المتجر */
+.store-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
+.store-item { background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
+.store-img { height: 80px; width: 100%; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-bottom: 10px; }
+.asia { background: #d32f2f; } .zain { background: #000; } .pubg { background: #ff9800; }
+
+/* الفريق والبروفايل */
+.invite-card { background: white; padding: 20px; border-radius: 15px; margin: 20px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+.invite-link-text { background: #eee; padding: 10px; border-radius: 8px; margin: 10px 0; word-break: break-all; font-family: monospace; }
+.telegram-group { display: flex; gap: 10px; padding: 20px; }
+.telegram-btn { flex: 1; text-align: center; padding: 12px; border-radius: 10px; color: white; text-decoration: none; font-size: 0.9rem; }
+.tg-channel { background: #229ED9; } .tg-chat { background: #4a148c; }
+.menu-list { padding: 0 20px; }
+.menu-item { background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 2px solid #f0f0f0; }
+
+/* الناف بار */
+.bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 999; }
+.nav-item { text-align: center; color: #bbb; flex: 1; font-size: 0.75rem; cursor: pointer; }
+.nav-item.active { color: var(--primary); }
+.nav-item i { font-size: 1.4rem; margin-bottom: 4px; display: block; }
+.floating-home { background: var(--primary); width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); border: 4px solid var(--bg); box-shadow: 0 5px 15px rgba(91, 36, 122, 0.4); }
+
+/* مودال تسجيل الدخول */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: none; justify-content: center; align-items: center; }
+.modal-content { background: white; padding: 30px; width: 85%; border-radius: 20px; text-align: center; }
+.google-btn { background: #db4437; margin-bottom: 10px; }
+.skip-btn { background: #555; }
+.custom-alert-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: center; }
+.custom-alert-box { background: white; padding: 25px; border-radius: 15px; text-align: center; width: 80%; animation: popUp 0.3s ease; }
+.alert-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; }
