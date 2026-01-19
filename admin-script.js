@@ -1,5 +1,5 @@
 /* =========================================
-   Admin Panel - Glass Style Logic (Updated)
+   Admin Panel - Glass Style Logic (Updated Support & Withdrawals)
    ========================================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -38,6 +38,7 @@ window.adminLogin = function() {
         renderPlans(); 
         renderNotes();
         listenToWithdrawals(); 
+        listenToSupport(); // تفعيل الاستماع للرسائل
         loadSettings(); // تحميل الإعدادات
     } else {
         document.getElementById('loginError').style.display = 'block';
@@ -299,8 +300,10 @@ window.deleteNote = function(i) {
     renderNotes();
 }
 
+/* === استماع للطلبات مع خيارات الموافقة/الرفض === */
 function listenToWithdrawals() {
     const list = document.getElementById('withdrawalsList');
+    // الترتيب حسب التاريخ الأحدث
     const q = query(collection(db, "withdrawals"), orderBy("date", "desc"));
 
     onSnapshot(q, (snapshot) => {
@@ -321,13 +324,35 @@ function listenToWithdrawals() {
             else if(req.method === 'usdt') icon = '💲';
             else if(req.method === 'fib') icon = '🏦';
 
+            // تحديد لون الحالة
+            let statusBadge = '';
+            let buttons = '';
+            
+            if(req.status === 'pending') {
+                statusBadge = '<span style="background:orange; padding:2px 8px; border-radius:10px; font-size:0.7rem;">جديد</span>';
+                buttons = `
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <button class="btn-done" style="background:green; border-radius:10px;" onclick="updateWithdrawStatus('${doc.id}', 'approved')">موافقة</button>
+                        <button class="btn-done" style="background:red; border-radius:10px;" onclick="updateWithdrawStatus('${doc.id}', 'rejected')">رفض</button>
+                    </div>
+                `;
+            } else if(req.status === 'approved') {
+                statusBadge = '<span style="background:green; color:white; padding:2px 8px; border-radius:10px; font-size:0.7rem;">تمت الموافقة</span>';
+            } else if(req.status === 'rejected') {
+                statusBadge = '<span style="background:red; color:white; padding:2px 8px; border-radius:10px; font-size:0.7rem;">مرفوض</span>';
+            }
+
             list.innerHTML += `
             <div class="req-card">
                 <div class="req-header">
                     <span>${icon} ${req.userName}</span>
-                    <span style="font-size:0.8rem; opacity:0.9">${dateStr}</span>
+                    <div>${statusBadge} <span style="font-size:0.8rem; opacity:0.9">${dateStr}</span></div>
                 </div>
                 <div class="req-body">
+                    <div class="req-row">
+                        <span style="color:#888;">الاسم الحقيقي</span>
+                        <span style="font-weight:bold;">${req.realName || 'غير متوفر'}</span>
+                    </div>
                     <div class="req-row">
                         <span style="color:#888;">المبلغ</span>
                         <span class="req-val amount">${Number(req.amount).toLocaleString()} IQD</span>
@@ -339,7 +364,8 @@ function listenToWithdrawals() {
                     <div class="req-account-box" onclick="copyText('${req.accountNumber}')">
                         ${req.accountNumber} <i class="fas fa-copy"></i>
                     </div>
-                    <button class="btn-done" onclick="deleteReq('${doc.id}')">✔️ تم التحويل</button>
+                    <small>ID: ${req.userId}</small>
+                    ${buttons}
                 </div>
             </div>
             `;
@@ -347,17 +373,78 @@ function listenToWithdrawals() {
     });
 }
 
+window.updateWithdrawStatus = async function(docId, newStatus) {
+    if(confirm(newStatus === 'approved' ? 'تأكيد الموافقة على السحب؟' : 'تأكيد رفض السحب؟')) {
+        try {
+            const reqRef = doc(db, "withdrawals", docId);
+            await updateDoc(reqRef, {
+                status: newStatus
+            });
+            alert("تم تحديث الحالة.");
+        } catch(e) {
+            console.error(e);
+            alert("حدث خطأ.");
+        }
+    }
+}
+
 window.copyText = function(text) {
     navigator.clipboard.writeText(text);
     alert('تم النسخ: ' + text);
 }
 
-window.deleteReq = async function(docId) {
-    if(confirm('هل تريد أرشفة هذا الطلب؟')) {
-        try {
-            await deleteDoc(doc(db, "withdrawals", docId));
-        } catch(e) {
-            console.error(e);
+/* === استماع لرسائل الدعم === */
+function listenToSupport() {
+    const list = document.getElementById('supportList');
+    const q = query(collection(db, "support_tickets"), orderBy("date", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        list.innerHTML = '';
+        if(snapshot.empty) {
+            list.innerHTML = '<p style="text-align:center; color:white;">لا توجد رسائل.</p>';
+            return;
         }
+
+        snapshot.forEach((doc) => {
+            const msg = doc.data();
+            const dateObj = new Date(msg.date);
+            const dateStr = dateObj.toLocaleDateString();
+
+            list.innerHTML += `
+            <div class="glass-card" style="text-align:right;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <strong>${msg.userName}</strong>
+                    <span style="font-size:0.8rem; color:#777;">${dateStr}</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.8); padding:10px; border-radius:10px; margin-bottom:10px;">
+                    <p style="margin:0;">${msg.lastMessage}</p>
+                </div>
+                <div style="font-size:0.85rem; color:#555; margin-bottom:10px;">
+                    الرصيد الحالي: <b>${msg.userBalance ? msg.userBalance.toLocaleString() : '---'} IQD</b> <br>
+                    ID: ${msg.userId}
+                </div>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="reply_${doc.id}" placeholder="اكتب الرد هنا..." style="flex:1; padding:8px; border-radius:5px; border:none;">
+                    <button onclick="replyToSupport('${doc.id}')" class="btn-glass-primary">رد</button>
+                </div>
+                ${msg.adminReply ? `<p style="color:green; font-size:0.8rem; margin-top:5px;">تم الرد: ${msg.adminReply}</p>` : ''}
+            </div>
+            `;
+        });
+    });
+}
+
+window.replyToSupport = async function(userId) {
+    const replyText = document.getElementById('reply_' + userId).value;
+    if(!replyText) return;
+
+    try {
+        await setDoc(doc(db, "support_tickets", userId), {
+            adminReply: replyText,
+            hasUnreadReply: true // تفعيل الإشعار للمستخدم
+        }, {merge: true});
+        alert("تم إرسال الرد");
+    } catch(e) {
+        alert("فشل الإرسال");
     }
 }
