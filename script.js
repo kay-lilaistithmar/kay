@@ -126,6 +126,7 @@ async function fetchPlansFromAdmin() {
             const planId = docSnap.id;
             const percent = (p.sold / p.stock) * 100;
             const isFull = p.sold >= p.stock;
+            const days = p.days || 30; // افتراضي 30 يوم
             
             const html = `
             <div class="plan-box gsap-card ${isFull ? 'full-plan' : ''}" style="${isFull ? 'opacity:0.7; pointer-events:none' : ''}">
@@ -134,11 +135,14 @@ async function fetchPlansFromAdmin() {
                     <div><span class="p-detail">السعر</span><span class="p-val">${p.price.toLocaleString()}</span></div>
                     <div><span class="p-detail">الربح اليومي</span><span class="p-val">${p.profit.toLocaleString()}</span></div>
                 </div>
+                <div style="text-align:center; margin-bottom:10px; background:#f0f0f0; padding:5px; border-radius:8px; font-size:0.9rem;">
+                   ⏳ المدة: <b>${days} يوم</b>
+                </div>
                 <div class="stock-info">
                     <div class="stock-bar"><div class="stock-fill" style="width: ${percent}%;"></div></div>
                     <span class="stock-text">متاح: ${p.sold}/${p.stock}</span>
                 </div>
-                <button onclick="requestPlan('${p.name}', ${p.price}, ${p.profit}, '${planId}')">
+                <button onclick="requestPlan('${p.name}', ${p.price}, ${p.profit}, '${planId}', ${days})">
                     ${isFull ? 'مكتمل' : 'شراء وتفعيل فوري'}
                 </button>
             </div>
@@ -339,6 +343,18 @@ function updateUI() {
                 let isActive = p.status === 'active';
                 let statusText = isActive ? 'يعمل' : 'متوقف';
                 let statusColor = isActive ? 'green' : 'red';
+                
+                // حساب الأيام المتبقية
+                let remainingDays = 0;
+                if(p.expiryDate) {
+                    const diff = p.expiryDate - Date.now();
+                    remainingDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                    if(remainingDays < 0) {
+                        remainingDays = 0;
+                        statusText = 'منتهي';
+                        statusColor = 'gray';
+                    }
+                }
 
                 list.innerHTML += `
                     <li class="menu-item" style="display:block; border-right:4px solid var(--primary);">
@@ -348,7 +364,7 @@ function updateUI() {
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#666;">
                             <span>الربح اليومي: ${p.profit} IQD</span>
-                            <span>السعر: ${p.price}</span>
+                            <span style="color:#d35400; font-weight:bold;">باقي: ${remainingDays} يوم</span>
                         </div>
                     </li>`;
             });
@@ -390,18 +406,23 @@ window.saveInviteCode = async function() {
 }
 
 // === الشراء وتفعيل منطق الإحالة (Team Logic) ===
-window.requestPlan = async function(planName, price, profit, planId) {
+window.requestPlan = async function(planName, price, profit, planId, days) {
     if(!userData.id) return;
     
     if(userData.balance < price) {
         return window.showMsg("عذراً", "رصيدك غير كافي لشراء هذا العداد", "🚫");
     }
+    
+    // حساب تاريخ الانتهاء
+    const expiryDate = Date.now() + (days * 24 * 60 * 60 * 1000);
 
-    if(confirm(`تأكيد شراء ${planName} بسعر ${price.toLocaleString()} IQD؟ \nسيتم تفعيل العداد فوراً.`)) {
+    if(confirm(`تأكيد شراء ${planName} بسعر ${price.toLocaleString()} IQD؟ \nلمدة ${days} يوم.`)) {
         const newPlan = {
             type: planName,
             price: price,
             profit: profit,
+            days: days,
+            expiryDate: expiryDate,
             status: 'active',
             date: new Date().toISOString()
         };
