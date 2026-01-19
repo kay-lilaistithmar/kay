@@ -244,18 +244,27 @@ function startDataListener(userId) {
         }
     });
 
-    // 2. استماع لسجل السحوبات الخاص بالمستخدم (للتحديث التلقائي والإشعارات)
-    const wQuery = query(collection(db, "withdrawals"), where("userId", "==", userId), orderBy("date", "desc"));
+    // 2. استماع لسجل السحوبات الخاص بالمستخدم (تم إزالة orderBy مؤقتاً لحل مشكلة التحميل)
+    const wQuery = query(collection(db, "withdrawals"), where("userId", "==", userId));
     onSnapshot(wQuery, (snapshot) => {
         const list = document.getElementById('transList');
-        if(list) list.innerHTML = '';
+        if(list) list.innerHTML = ''; // مسح المحتوى القديم (بما في ذلك رسالة جاري التحميل)
+        
         let hasNotification = false;
+        let transactions = [];
 
-        if (snapshot.empty) {
+        // تحويل البيانات إلى مصفوفة
+        snapshot.forEach((doc) => {
+            transactions.push(doc.data());
+        });
+
+        // ترتيب البيانات يدوياً (الأحدث أولاً)
+        transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (transactions.length === 0) {
             if(list) list.innerHTML = '<li style="color:#777; text-align:center;">لا توجد عمليات حديثة</li>';
         } else {
-            snapshot.forEach((doc) => {
-                const data = doc.data();
+            transactions.forEach((data) => {
                 const date = new Date(data.date).toLocaleDateString('ar-EG');
                 
                 let statusHtml = '';
