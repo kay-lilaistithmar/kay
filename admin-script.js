@@ -66,14 +66,16 @@ window.addNewPlan = async function() {
     const price = document.getElementById('pPrice').value;
     const profit = document.getElementById('pProfit').value;
     const stock = document.getElementById('pStock').value;
+    const days = document.getElementById('pDays').value;
 
-    if (!name || !price || !stock) return alert('يرجى ملء كافة الحقول');
+    if (!name || !price || !stock || !days) return alert('يرجى ملء كافة الحقول بما فيها مدة العداد');
 
     const newPlan = {
         name: name,
         price: Number(price),
         profit: Number(profit),
         stock: Number(stock),
+        days: Number(days),
         sold: 0,
         createdAt: Date.now() 
     };
@@ -87,6 +89,7 @@ window.addNewPlan = async function() {
         
         document.getElementById('pName').value = '';
         document.getElementById('pPrice').value = '';
+        document.getElementById('pDays').value = '';
     } catch (e) {
         console.error("Error adding plan: ", e);
         alert("حدث خطأ");
@@ -116,7 +119,7 @@ window.renderPlans = async function() {
                 <div class="plan-item">
                     <div>
                         <strong style="color:var(--primary-pink);">${plan.name}</strong> <br>
-                        <small>سعر: ${plan.price} | ربح: ${plan.profit} | <span style="color:#2980b9">${plan.sold}/${plan.stock}</span></small>
+                        <small>سعر: ${plan.price} | ربح: ${plan.profit} | مدة: ${plan.days || 30} يوم | <span style="color:#2980b9">${plan.sold}/${plan.stock}</span></small>
                     </div>
                     <button onclick="deletePlan('${planId}')" class="btn-glass" style="background:#ff758c; color:white;">حذف</button>
                 </div>
