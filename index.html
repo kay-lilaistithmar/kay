@@ -61,6 +61,24 @@
             });
         }
     </script>
+    <style>
+        /* إضافة صغيرة لعلامة الإشعارات */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: none; /* مخفي افتراضياً */
+            justify-content: center;
+            align-items: center;
+            border: 2px solid var(--primary);
+        }
+    </style>
 </head>
 <body>
 
@@ -87,16 +105,39 @@
         <div class="modal-content" style="text-align: right;">
             <h3 style="text-align: center; margin-bottom: 20px;">طلب سحب أرباح</h3>
             <p>الرصيد الكلي: <span id="wTotalBalance" style="font-weight: bold; color: green;">0</span> IQD</p>
+            
+            <label style="font-size:0.8rem; color:#666;">الاسم الشخصي (الثلاثي)</label>
+            <input type="text" id="wRealName" style="width:100%; padding:10px; margin-bottom:10px;" placeholder="اكتب اسمك الحقيقي هنا">
+
+            <label style="font-size:0.8rem; color:#666;">المبلغ</label>
             <input type="number" id="wAmount" style="width:100%; padding:10px; margin-bottom:10px;" placeholder="أقل مبلغ 7000">
+            
+            <label style="font-size:0.8rem; color:#666;">طريقة السحب</label>
             <select id="wMethod" style="width:100%; padding:10px; margin-bottom:10px;">
                 <option value="zaincash">زين كاش (ZainCash)</option>
                 <option value="mastercard">ماستر كارد (MasterCard)</option>
                 <option value="fib">FIB</option>
                 <option value="usdt">USDT (TRC20)</option>
             </select>
+            
+            <label style="font-size:0.8rem; color:#666;">رقم الحساب / المحفظة</label>
             <input type="text" id="wAccount" style="width:100%; padding:10px; margin-bottom:20px;" placeholder="اكتب الرقم أو العنوان هنا">
+            
             <button onclick="submitWithdrawRequest()" style="background:var(--primary); width:100%;">تأكيد السحب</button>
             <button onclick="document.getElementById('withdrawModal').style.display='none'" style="background:#555; width:100%; margin-top:10px;">إلغاء</button>
+        </div>
+    </div>
+
+    <div id="supportModal" class="modal-overlay">
+        <div class="modal-content" style="height: 80%; display: flex; flex-direction: column;">
+            <div style="flex:1; overflow-y: auto; text-align: right; padding: 10px; background: #f9f9f9; border-radius: 10px; margin-bottom: 10px;" id="chatHistory">
+                <p style="text-align:center; color:#999; font-size:0.8rem;">مرحباً بك في الدعم الفني</p>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="supportMsgInput" style="flex:1; padding:10px; border-radius:5px; border:1px solid #ddd;" placeholder="اكتب رسالتك...">
+                <button onclick="sendSupportMessage()" style="width:auto; padding:0 20px;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <button onclick="document.getElementById('supportModal').style.display='none'" style="background:#555; margin-top:10px;">إغلاق</button>
         </div>
     </div>
 
@@ -118,8 +159,10 @@
                 <span style="font-size:0.7rem; display:block; opacity:0.8;">ID: <span id="userId">---</span></span>
             </div>
         </div>
-        <div class="header-actions">
-            <i class="fas fa-bell" onclick="showMsg('الإشعارات', 'لا توجد إشعارات جديدة.', '🔔')"></i>
+        <div class="header-actions" style="position: relative;">
+            <i class="fas fa-bell" onclick="showMsg('الإشعارات', 'تفضل بمراجعة قسم الدعم الفني.', '🔔')"></i>
+            <span id="notifBadge" class="notification-badge">!</span>
+            <i class="fas fa-headset" onclick="openSupportChat()" style="margin-right: 15px;"></i>
         </div>
     </div>
 
@@ -195,7 +238,7 @@
                 </div>
                 <h3 style="margin-top:20px;">سجل العمليات</h3>
                 <ul id="transList" style="list-style:none; padding:0;">
-                    <li style="color:#777; text-align:center;">لا توجد عمليات حديثة</li>
+                    <li style="color:#777; text-align:center;">جاري تحميل العمليات...</li>
                 </ul>
             </div>
         </section>
