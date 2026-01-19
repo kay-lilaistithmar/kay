@@ -1,9 +1,9 @@
 /* =========================================
-   Admin Panel - Glass Style Logic (Updated Support & Withdrawals)
+   Admin Panel - Glass Style Logic (Updated Support & Withdrawals & Refund)
    ========================================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, query, orderBy, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAFzCkQI0jedUl8W9xO1Bwzdg2Rhnxsh-s",
@@ -373,17 +373,35 @@ function listenToWithdrawals() {
     });
 }
 
+// دالة تحديث الحالة + استرجاع الرصيد عند الرفض
 window.updateWithdrawStatus = async function(docId, newStatus) {
     if(confirm(newStatus === 'approved' ? 'تأكيد الموافقة على السحب؟' : 'تأكيد رفض السحب؟')) {
         try {
+            // جلب تفاصيل الطلب أولاً لمعرفة المبلغ والمستخدم
             const reqRef = doc(db, "withdrawals", docId);
+            const reqSnap = await getDoc(reqRef);
+
+            if (!reqSnap.exists()) return alert("الطلب غير موجود");
+            const reqData = reqSnap.data();
+
+            // إذا كانت الحالة "رفض"، نقوم بإرجاع المبلغ للمستخدم
+            if (newStatus === 'rejected') {
+                 const userRef = doc(db, "users", reqData.userId);
+                 await updateDoc(userRef, {
+                     balance: increment(reqData.amount) // إعادة الرصيد
+                 });
+            }
+
+            // تحديث حالة الطلب
             await updateDoc(reqRef, {
                 status: newStatus
             });
-            alert("تم تحديث الحالة.");
+            
+            alert("تم تحديث الحالة" + (newStatus === 'rejected' ? " وتم استرجاع الرصيد للمستخدم." : "."));
+
         } catch(e) {
             console.error(e);
-            alert("حدث خطأ.");
+            alert("حدث خطأ أثناء التحديث.");
         }
     }
 }
