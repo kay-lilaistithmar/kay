@@ -1,9 +1,9 @@
 /* =========================================
-   Keey App - Logic V4.0 (Team & Withdrawals Update)
+   Keey App - Logic V4.0 (Updated Withdrawals & Support)
    ========================================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, getDocs, increment, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, getDocs, increment, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -223,8 +223,9 @@ window.logout = function() {
     });
 }
 
-// === الاستماع للبيانات ===
+// === الاستماع للبيانات (معدلة) ===
 function startDataListener(userId) {
+    // 1. استماع لبيانات المستخدم
     onSnapshot(doc(db, "users", userId), (docSnap) => {
         if (docSnap.exists()) {
             userData = docSnap.data();
@@ -240,6 +241,66 @@ function startDataListener(userId) {
             document.getElementById('loginModal').style.display = 'none';
         } else {
             localStorage.removeItem('keyApp_userId');
+        }
+    });
+
+    // 2. استماع لسجل السحوبات الخاص بالمستخدم (للتحديث التلقائي والإشعارات)
+    const wQuery = query(collection(db, "withdrawals"), where("userId", "==", userId), orderBy("date", "desc"));
+    onSnapshot(wQuery, (snapshot) => {
+        const list = document.getElementById('transList');
+        if(list) list.innerHTML = '';
+        let hasNotification = false;
+
+        if (snapshot.empty) {
+            if(list) list.innerHTML = '<li style="color:#777; text-align:center;">لا توجد عمليات حديثة</li>';
+        } else {
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const date = new Date(data.date).toLocaleDateString('ar-EG');
+                
+                let statusHtml = '';
+                let statusColor = '#f39c12';
+                let statusText = 'قيد المراجعة';
+
+                if(data.status === 'approved') {
+                    statusText = 'تم الموافقة على السحبة من إدارة المالية keey';
+                    statusColor = 'green';
+                    hasNotification = true; // تفعيل الجرس
+                } else if(data.status === 'rejected') {
+                    statusText = 'تم الرفض راجع قسم الدعم';
+                    statusColor = 'red';
+                    hasNotification = true; // تفعيل الجرس
+                } else {
+                    statusText = 'قيد المراجعة';
+                }
+
+                if(list) {
+                    list.innerHTML += `
+                        <li style="background:white; padding:10px; margin-bottom:10px; border-radius:10px; border-right:4px solid ${statusColor}; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                                <span>سحب ${data.amount} IQD</span>
+                                <span style="font-size:0.8rem; color:#777">${date}</span>
+                            </div>
+                            <div style="font-size:0.85rem; color:${statusColor}; margin-top:5px;">
+                                ${statusText}
+                            </div>
+                        </li>
+                    `;
+                }
+            });
+        }
+        
+        // تفعيل شارة الإشعارات إذا كان هناك تغيير
+        if(hasNotification) document.getElementById('notifBadge').style.display = 'flex';
+    });
+
+    // 3. استماع لرسائل الدعم الفني (للإشعارات)
+    onSnapshot(doc(db, "support_tickets", userId), (docSnap) => {
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            if(data.hasUnreadReply) {
+                document.getElementById('notifBadge').style.display = 'flex';
+            }
         }
     });
 }
@@ -508,6 +569,7 @@ window.showWithdraw = function() {
     document.getElementById('wTotalBalance').innerText = userData.balance.toLocaleString();
     document.getElementById('wAmount').value = '';
     document.getElementById('wAccount').value = '';
+    document.getElementById('wRealName').value = ''; // تصفير حقل الاسم
     document.getElementById('withdrawModal').style.display = 'flex';
 }
 
@@ -515,7 +577,11 @@ window.submitWithdrawRequest = async function() {
     const amount = Number(document.getElementById('wAmount').value);
     const method = document.getElementById('wMethod').value;
     const account = document.getElementById('wAccount').value;
+    const realName = document.getElementById('wRealName').value; // الاسم الحقيقي
 
+    if (!realName || realName.length < 5) {
+        return alert("يرجى كتابة اسمك الحقيقي (الثلاثي) بشكل صحيح");
+    }
     if (!amount || amount < 7000) {
         return alert("أقل مبلغ للسحب هو 7000 دينار");
     }
@@ -528,23 +594,26 @@ window.submitWithdrawRequest = async function() {
 
     if (confirm(`هل أنت متأكد من سحب ${amount} IQD عبر ${method}؟`)) {
         try {
+            // خصم الرصيد فوراً
             const userRef = doc(db, "users", userData.id);
             await updateDoc(userRef, {
                 balance: increment(-amount)
             });
 
+            // إضافة الطلب إلى مجموعة السحوبات
             await addDoc(collection(db, "withdrawals"), {
                 userId: userData.id,
                 userName: userData.name,
+                realName: realName, // حفظ الاسم
                 amount: amount,
                 method: method,
                 accountNumber: account,
-                status: 'pending',
+                status: 'pending', // الحالة الأولية
                 date: new Date().toISOString()
             });
 
             document.getElementById('withdrawModal').style.display = 'none';
-            window.showMsg("تم الطلب", "تم استقطاع المبلغ وإرسال طلب السحب إلى الإدارة.", "✅");
+            window.showMsg("تم الطلب", "تم استقطاع المبلغ وإرسال طلب السحب للمراجعة.", "✅");
 
         } catch (e) {
             console.error(e);
@@ -552,6 +621,58 @@ window.submitWithdrawRequest = async function() {
         }
     }
 }
+
+// === الدعم الفني والدردشة ===
+window.openSupportChat = async function() {
+    document.getElementById('notifBadge').style.display = 'none'; // إخفاء الشارة عند الفتح
+    document.getElementById('supportModal').style.display = 'flex';
+    
+    // تحديث حالة الرسائل (مقروءة)
+    try {
+        await setDoc(doc(db, "support_tickets", userData.id), {
+            hasUnreadReply: false
+        }, {merge: true});
+    } catch(e) {}
+
+    // الاستماع للرسائل
+    onSnapshot(doc(db, "support_tickets", userData.id), (docSnap) => {
+        const chatBox = document.getElementById('chatHistory');
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            chatBox.innerHTML = '<p style="text-align:center; color:#999; font-size:0.8rem;">مرحباً بك في الدعم الفني</p>';
+            
+            // عرض آخر رسالة للمستخدم
+            if(data.lastMessage) {
+                chatBox.innerHTML += `<div style="text-align:right; margin:10px;"><span style="background:#e1f5fe; padding:8px; border-radius:10px;">${data.lastMessage}</span></div>`;
+            }
+            // عرض رد الأدمن
+            if(data.adminReply) {
+                chatBox.innerHTML += `<div style="text-align:left; margin:10px;"><span style="background:#fce4ec; padding:8px; border-radius:10px;">الدعم: ${data.adminReply}</span></div>`;
+            }
+        }
+    });
+}
+
+window.sendSupportMessage = async function() {
+    const msg = document.getElementById('supportMsgInput').value;
+    if(!msg) return;
+    
+    try {
+        await setDoc(doc(db, "support_tickets", userData.id), {
+            userId: userData.id,
+            userName: userData.name,
+            lastMessage: msg,
+            userBalance: userData.balance, // إرسال الرصيد الحالي للأدمن
+            date: new Date().toISOString(),
+            hasUnreadReply: false // المستخدم هو من أرسل
+        }, {merge: true});
+        
+        document.getElementById('supportMsgInput').value = '';
+    } catch(e) {
+        alert("فشل الإرسال");
+    }
+}
+
 
 // === التنقل بين التبويبات ===
 window.switchTab = function(tabId) {
