@@ -20,7 +20,7 @@ const db = getFirestore(app);
 
 const ADMIN_AUTH = {
     email: "saraameer1022@gmail.com",
-    pass: "1998b"
+    pass: "1998b" // كلمة المرور الافتراضية
 };
 
 let currentUser = null; 
@@ -31,7 +31,10 @@ window.adminLogin = function() {
     const email = document.getElementById('adminEmail').value;
     const pass = document.getElementById('adminPass').value;
 
-    if (email === ADMIN_AUTH.email && pass === ADMIN_AUTH.pass) {
+    // تعديل: التحقق من كلمة المرور المخزنة في الذاكرة أو استخدام الافتراضية
+    const storedPass = localStorage.getItem('admin_password') || ADMIN_AUTH.pass;
+
+    if (email === ADMIN_AUTH.email && pass === storedPass) {
         document.getElementById('adminLoginModal').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('bottomNav').style.display = 'flex'; // إظهار الشريط السفلي
@@ -54,6 +57,33 @@ window.showTab = function(tabId, el) {
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     if(el) el.classList.add('active');
+}
+
+/* === وظيفة تغيير كلمة المرور (جديد) === */
+window.changeAdminPassword = function() {
+    const currentInput = document.getElementById('currentAdminPass').value;
+    const newInput = document.getElementById('newAdminPass').value;
+    
+    // جلب كلمة السر الحالية للتأكد
+    const savedPass = localStorage.getItem('admin_password') || ADMIN_AUTH.pass;
+
+    if (currentInput !== savedPass) {
+        alert("❌ كلمة المرور الحالية غير صحيحة!");
+        return;
+    }
+
+    if (newInput.length < 4) {
+        alert("⚠️ كلمة المرور الجديدة قصيرة جداً (يجب أن تكون 4 أحرف على الأقل).");
+        return;
+    }
+
+    // حفظ كلمة السر الجديدة
+    localStorage.setItem('admin_password', newInput);
+    alert("✅ تم تغيير كلمة المرور بنجاح! سيتم اعتمادها في المرة القادمة.");
+    
+    // تفريغ الخانات
+    document.getElementById('currentAdminPass').value = "";
+    document.getElementById('newAdminPass').value = "";
 }
 
 /* === 1. إدارة العدادات === */
@@ -198,7 +228,7 @@ window.saveUserChanges = async function() {
     }
 }
 
-// دالة جديدة: ربط المستخدم بفريق يدوياً
+// دالة ربط المستخدم بفريق يدوياً
 window.linkUserToLeader = async function() {
     if(!currentUser || !currentUser.dbId) return;
     const leaderId = document.getElementById('uLeaderID').value.trim();
