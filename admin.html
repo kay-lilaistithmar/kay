@@ -49,6 +49,7 @@
 
             <section id="settings" class="tab-section">
                 <h2>إعدادات النظام</h2>
+                
                 <div class="glass-card">
                     <h3>طرق السحب المتاحة</h3>
                     <div style="display:flex; flex-direction:column; gap:10px;">
@@ -58,6 +59,15 @@
                         <label><input type="checkbox" id="chkUSDT"> عملة رقمية (USDT)</label>
                     </div>
                     <button onclick="saveWithdrawSettings()" class="btn-glass-primary" style="margin-top:15px; width:100%;">حفظ الإعدادات</button>
+                </div>
+
+                <div class="glass-card" style="margin-top: 20px;">
+                    <h3>🔐 تغيير كلمة المرور</h3>
+                    <div style="display:grid; gap:10px;">
+                        <input type="password" id="currentAdminPass" placeholder="كلمة المرور الحالية" style="padding:10px; border-radius:10px; border:none;">
+                        <input type="password" id="newAdminPass" placeholder="كلمة المرور الجديدة" style="padding:10px; border-radius:10px; border:none;">
+                    </div>
+                    <button onclick="changeAdminPassword()" class="btn-glass-primary" style="margin-top:15px; width:100%; background:var(--primary-cyan);">تحديث كلمة المرور</button>
                 </div>
             </section>
 
