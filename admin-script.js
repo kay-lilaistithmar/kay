@@ -268,6 +268,20 @@ window.banUser = async function() {
     }
 }
 
+window.unbanUser = async function() {
+    if(currentUser && currentUser.dbId) {
+        if(confirm("إلغاء الحظر عن هذا المستخدم؟")) {
+            try {
+                const userRef = doc(db, "users", currentUser.dbId);
+                await updateDoc(userRef, { status: 'active' });
+                alert('تم إلغاء الحظر ✅');
+            } catch(e) {
+                alert("فشل");
+            }
+        }
+    }
+}
+
 /* === 3. إعدادات السحب === */
 window.loadSettings = async function() {
     try {
