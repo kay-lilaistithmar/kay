@@ -268,17 +268,49 @@ window.banUser = async function() {
     }
 }
 
-window.unbanUser = async function() {
+// === منطق فك الحظر الجديد ===
+window.openUnbanModal = function() {
     if(currentUser && currentUser.dbId) {
-        if(confirm("إلغاء الحظر عن هذا المستخدم؟")) {
-            try {
-                const userRef = doc(db, "users", currentUser.dbId);
-                await updateDoc(userRef, { status: 'active' });
-                alert('تم إلغاء الحظر ✅');
-            } catch(e) {
-                alert("فشل");
-            }
-        }
+        document.getElementById('unbanModal').style.display = 'flex';
+        // إعادة تعيين محتوى المودال في حال تم تغييره سابقاً
+        document.getElementById('unbanContent').innerHTML = `
+            <div class="icon-lock" style="font-size: 4rem; margin-bottom: 10px;">🙈</div>
+            <h2 style="color:white; margin-bottom:20px; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">كولي باسم عزيزي</h2>
+            <button onclick="confirmUnbanAction()" class="btn-glass-primary" style="background: linear-gradient(45deg, #ff69b4, #ff1493); width: 100%; font-size: 1.2rem;">فك الحظر</button>
+            <button onclick="closeUnbanModal()" style="background:transparent; border:none; color:white; margin-top:15px; cursor:pointer; text-decoration: underline;">إلغاء</button>
+        `;
+    } else {
+        alert("اختر مستخدم أولاً");
+    }
+}
+
+window.closeUnbanModal = function() {
+    document.getElementById('unbanModal').style.display = 'none';
+}
+
+window.confirmUnbanAction = async function() {
+    if(!currentUser || !currentUser.dbId) return;
+
+    try {
+        const userRef = doc(db, "users", currentUser.dbId);
+        await updateDoc(userRef, { status: 'active' });
+        
+        // تغيير محتوى النافذة لإظهار رسالة الشكر مع أنميشن
+        const modalContent = document.getElementById('unbanContent');
+        modalContent.innerHTML = `
+            <div class="icon-lock" style="font-size: 4rem; margin-bottom: 10px; animation: popUp 0.5s infinite alternate;">😌</div>
+            <h2 style="color:white; margin-bottom:20px; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">شكرا عزيزتي</h2>
+            <p style="color:white;">تم فك الحظر بنجاح</p>
+        `;
+        
+        // إغلاق النافذة تلقائياً بعد ثانيتين
+        setTimeout(() => {
+            closeUnbanModal();
+        }, 2000);
+
+    } catch(e) {
+        alert("فشل العملية");
+        closeUnbanModal();
     }
 }
 
