@@ -82,6 +82,31 @@
 </head>
 <body>
 
+    <div id="storeWarningModal" class="modal-overlay">
+        <div class="modal-content" style="border: 2px solid red;">
+            <div style="font-size:3rem; margin-bottom:10px;">⚠️</div>
+            <h3 style="color:red;">تحذير هام</h3>
+            <p style="text-align:right; font-size:0.9rem; line-height:1.6;">
+                أي تلاعب على الشركة والمتجر في الشراء حتى إن كان من حساب آخر سيتم حظر جميع حسابات هاتفك بالكامل.
+                <br> يتم حفظ معلومات الحساب عبر GPS.
+                <br> نتمنى أن تكون عضو استثماري يساعد على التطوير الذاتي.
+            </p>
+            <label style="display:block; margin:15px 0;">
+                <input type="checkbox" id="dontShowStoreWarn"> لا تظهر لي هذه الرسالة مجدداً
+            </label>
+            <button onclick="acceptStoreWarning()" style="background:var(--primary);">موافق ومتابعة</button>
+        </div>
+    </div>
+
+    <div id="purchasesModal" class="modal-overlay">
+        <div class="modal-content" style="height: 80%; display: flex; flex-direction: column;">
+            <h3>سجل المشتريات</h3>
+            <div id="purchasesList" style="flex:1; overflow-y: auto; text-align: right; margin-top:10px;">
+                </div>
+            <button onclick="document.getElementById('purchasesModal').style.display='none'" style="background:#555; margin-top:10px;">إغلاق</button>
+        </div>
+    </div>
+
     <div id="installBanner" class="install-modal" style="display: none;">
         <div class="install-content">
             <div class="install-icon"><img src="https://e.top4top.io/p_3669xvp3m1.jpg" style="width:60px; border-radius:10px;"></div>
@@ -175,9 +200,17 @@
                 
                 <div class="daily-counter-box">
                     <p>الربح اليومي الكلي: <span id="totalDailyProfit" style="color:#f1c40f; font-weight:bold;">0</span> IQD</p>
-                    <div class="timer-anim">
+                    
+                    <div class="master-card-container">
+                        <div class="master-card-bg">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" style="width: 60%; opacity: 0.8;">
+                            <div style="position:absolute; bottom:10px; left:10px; color:white; font-family:monospace;">**** **** **** 1234</div>
+                        </div>
+                        <div class="master-card-overlay" id="cardOverlay"></div> </div>
+                    <div class="timer-anim" style="margin-top:10px;">
                         <span id="dailyTimer">00:00:00</span>
                     </div>
+
                     <button id="startMiningBtn" onclick="manualClaimAndStart()" style="display:none; background:#27ae60; margin-top:10px; animation: pulse 1.5s infinite;">
                         ⚡ جمع الأرباح وتشغيل العداد
                     </button>
@@ -245,12 +278,16 @@
 
         <section id="store" class="tab-content">
             <div style="padding:20px;">
-                <h2 style="color:var(--primary);">المتجر</h2>
-                <div class="store-grid">
-                    <div class="store-item"><div class="store-img asia">Asia</div><h4>آسيا</h4><button onclick="showMsg('المتجر','المتجر في فترة الصيانة شاكرين لتفهمكم','🛠️')">شراء</button></div>
-                    <div class="store-item"><div class="store-img zain">Zain</div><h4>زين</h4><button onclick="showMsg('المتجر','المتجر في فترة الصيانة شاكرين لتفهمكم','🛠️')">شراء</button></div>
-                    <div class="store-item"><div class="store-img pubg">PUBG</div><h4>بوبجي</h4><button onclick="showMsg('المتجر','المتجر في فترة الصيانة شاكرين لتفهمكم','🛠️')">شراء</button></div>
-                    <div class="store-item"><div class="store-img ludo">Ludo</div><h4>لودو</h4><button onclick="showMsg('المتجر','المتجر في فترة الصيانة شاكرين لتفهمكم','🛠️')">شراء</button></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="color:var(--primary); margin:0;">المتجر</h2>
+                    <button onclick="openPurchases()" style="width:auto; background:var(--accent); font-size:0.8rem;">📦 المشتريات</button>
+                </div>
+                
+                <div id="userStoreCategories" class="store-categories-container">
+                    </div>
+
+                <div id="userStoreProducts" style="margin-top:20px;">
+                    <p style="text-align:center; color:#777;">اختر تصنيفاً لعرض المنتجات</p>
                 </div>
             </div>
         </section>
