@@ -1,181 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة Keey | زجاجي</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="admin-style.css">
-</head>
-<body>
-
-    <div id="adminLoginModal" class="login-overlay">
-        <div class="login-box">
-            <div class="icon-lock"><i class="fas fa-gem"></i></div>
-            <h2>لوحة القيادة</h2>
-            <input type="email" id="adminEmail" placeholder="البريد الإلكتروني">
-            <input type="password" id="adminPass" placeholder="كلمة المرور">
-            <button onclick="adminLogin()">تسجيل الدخول</button>
-            <p id="loginError" style="color:#ffb3c1; display:none; margin-top:10px; font-weight:bold;">البيانات خاطئة</p>
-        </div>
-    </div>
-
-    <div id="unbanModal" class="login-overlay" style="display:none; z-index: 10000;">
-        <div class="login-box" id="unbanContent" style="animation: popUp 0.5s ease; background: rgba(255, 105, 180, 0.3);">
-            <div class="icon-lock" style="font-size: 4rem; margin-bottom: 10px;">🙈</div>
-            <h2 style="color:white; margin-bottom:20px; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">كولي باسم عزيزي</h2>
-            <button onclick="confirmUnbanAction()" class="btn-glass-primary" style="background: linear-gradient(45deg, #ff69b4, #ff1493); width: 100%; font-size: 1.2rem;">فك الحظر</button>
-            <button onclick="closeUnbanModal()" style="background:transparent; border:none; color:white; margin-top:15px; cursor:pointer; text-decoration: underline;">إلغاء</button>
-        </div>
-    </div>
-
-    <div class="admin-container" id="adminPanel" style="display:none;">
-        
-        <main class="main-content">
-            
-            <section id="counters" class="tab-section active">
-                <div class="glass-card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="margin:0; color:var(--text-dark); text-shadow:none;">العدادات</h2>
-                    <button onclick="toggleAddForm()" class="btn-glass-primary"><i class="fas fa-plus"></i> جديد</button>
-                </div>
-
-                <div id="addPlanForm" class="glass-card form-panel" style="display:none;">
-                    <h3 style="margin-top:0; color:var(--primary-pink)">إضافة عداد</h3>
-                    <div style="display:grid; gap:10px;">
-                        <input type="text" id="pName" placeholder="اسم العداد">
-                        <input type="number" id="pPrice" placeholder="سعر العداد">
-                        <input type="number" id="pProfit" placeholder="الربح اليومي">
-                        <input type="number" id="pDays" placeholder="مدة العداد (بالأيام)">
-                        <input type="number" id="pStock" placeholder="العدد المسموح">
-                    </div>
-                    <button onclick="addNewPlan()" class="btn-glass-primary" style="width:100%; margin-top:10px;">حفظ ونشر</button>
-                </div>
-
-                <div class="plans-list" id="adminPlansList">
-                    جاري التحميل...
-                </div>
-            </section>
-
-            <section id="settings" class="tab-section">
-                <h2>إعدادات النظام</h2>
-                
-                <div class="glass-card">
-                    <h3>طرق السحب المتاحة</h3>
-                    <div style="display:flex; flex-direction:column; gap:10px;">
-                        <label><input type="checkbox" id="chkZain"> زين كاش (ZainCash)</label>
-                        <label><input type="checkbox" id="chkMaster"> ماستر كارد (MasterCard)</label>
-                        <label><input type="checkbox" id="chkFIB"> مصرف FIB</label>
-                        <label><input type="checkbox" id="chkUSDT"> عملة رقمية (USDT)</label>
-                    </div>
-                    <button onclick="saveWithdrawSettings()" class="btn-glass-primary" style="margin-top:15px; width:100%;">حفظ الإعدادات</button>
-                </div>
-
-                <div class="glass-card" style="margin-top: 20px;">
-                    <h3>🔐 تغيير كلمة المرور</h3>
-                    <div style="display:grid; gap:10px;">
-                        <input type="password" id="currentAdminPass" placeholder="كلمة المرور الحالية" style="padding:10px; border-radius:10px; border:none;">
-                        <input type="password" id="newAdminPass" placeholder="كلمة المرور الجديدة" style="padding:10px; border-radius:10px; border:none;">
-                    </div>
-                    <button onclick="changeAdminPassword()" class="btn-glass-primary" style="margin-top:15px; width:100%; background:var(--primary-cyan);">تحديث كلمة المرور</button>
-                </div>
-            </section>
-
-            <section id="investors" class="tab-section">
-                <h2>المستثمرين</h2>
-                <div class="search-box">
-                    <input type="text" id="searchId" placeholder="بحث بـ ID المستخدم...">
-                    <button onclick="searchUser()"><i class="fas fa-search"></i></button>
-                </div>
-
-                <div id="userResult" class="glass-card" style="display:none;">
-                    <div style="text-align:center; margin-bottom:15px;">
-                        <i class="fas fa-user-circle" style="font-size:3rem; color:var(--primary-cyan);"></i>
-                        <h3 id="uName" style="margin:5px 0;">---</h3>
-                        <span id="uID" style="background:#eee; padding:2px 8px; border-radius:10px; font-size:0.8rem;">---</span>
-                        <div id="uReferralInfo" style="margin-top:5px; font-size:0.8rem; color:gray;"></div>
-                    </div>
-                    
-                    <div style="background:rgba(255,255,255,0.5); padding:10px; border-radius:10px; margin-bottom:15px;">
-                        <label>الرصيد:</label>
-                        <input type="number" id="uBalance" style="width:100px; padding:5px; border-radius:5px; border:1px solid #ddd; text-align:center;">
-                        <div style="display:flex; gap:5px; margin-top:5px; justify-content:center;">
-                            <button onclick="updateBalance(1)" class="btn-glass" style="color:green; background:white;">+</button>
-                            <button onclick="updateBalance(-1)" class="btn-glass" style="color:red; background:white;">-</button>
-                        </div>
-                    </div>
-
-                    <div style="background:rgba(255,255,255,0.5); padding:10px; border-radius:10px; margin-bottom:15px;">
-                        <label>ربط بفريق (ID القائد):</label>
-                        <div style="display:flex; gap:5px;">
-                            <input type="text" id="uLeaderID" placeholder="ID القائد" style="flex:1; padding:5px; border-radius:5px; border:none;">
-                            <button onclick="linkUserToLeader()" class="btn-glass-primary">ربط</button>
-                        </div>
-                    </div>
-
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="saveUserChanges()" class="btn-glass-primary" style="flex:1;">حفظ الرصيد</button>
-                        <button onclick="banUser()" style="flex:1; background:var(--primary-red); color:white; border:none; border-radius:50px; cursor:pointer;">حظر</button>
-                        <button onclick="openUnbanModal()" style="flex:1; background:linear-gradient(45deg, #ff69b4, #ff1493); color:white; border:none; border-radius:50px; cursor:pointer;">فك الحظر</button>
-                    </div>
-                </div>
-            </section>
-
-            <section id="notes" class="tab-section">
-                <h2>الملاحظات</h2>
-                <div class="glass-card">
-                    <div style="display:flex; gap:10px; margin-bottom:10px;">
-                        <input type="text" id="noteName" placeholder="نص الملاحظة" style="width:100%; padding:10px; border-radius:10px; border:none;">
-                        <input type="date" id="noteDate" style="border-radius:10px; border:none; padding:5px;">
-                    </div>
-                    <button onclick="addNote()" class="btn-glass-primary" style="width:100%;">إضافة</button>
-                </div>
-                <table class="notes-table">
-                    <thead><tr><th>الملاحظة</th><th>التاريخ</th><th>#</th></tr></thead>
-                    <tbody id="notesList"></tbody>
-                </table>
-            </section>
-
-            <section id="withdrawals" class="tab-section">
-                <h2>الطلبات الواردة</h2>
-                <div class="withdrawals-grid" id="withdrawalsList">
-                    <p style="text-align:center; color:white;">جاري التحميل...</p>
-                </div>
-            </section>
-
-            <section id="support" class="tab-section">
-                <h2>الدعم الفني</h2>
-                <div id="supportList" class="withdrawals-grid">
-                    <p style="text-align:center; color:white;">لا توجد رسائل.</p>
-                </div>
-            </section>
-
-        </main>
-    </div>
-
-    <nav class="bottom-nav" id="bottomNav" style="display:none;">
-        <div class="nav-item active" onclick="showTab('counters', this)">
-            <i class="fas fa-tachometer-alt"></i> <span>العدادات</span>
-        </div>
-        <div class="nav-item" onclick="showTab('withdrawals', this)">
-            <i class="fas fa-bell"></i> <span>الطلبات</span>
-        </div>
-        <div class="nav-item" onclick="showTab('support', this)">
-            <i class="fas fa-headset"></i> <span>الدعم</span>
-        </div>
-        <div class="nav-item" onclick="showTab('investors', this)">
-            <i class="fas fa-users"></i> <span>المستثمرين</span>
-        </div>
-        <div class="nav-item" onclick="showTab('settings', this)">
-            <i class="fas fa-cogs"></i> <span>الإعدادات</span>
-        </div>
-        <div class="nav-item" onclick="showTab('notes', this)">
-            <i class="fas fa-sticky-note"></i> <span>مذكرة</span>
-        </div>
-        <div class="nav-item" onclick="adminLogout()">
-            <i class="fas fa-power-off" style="color:var(--primary-red);"></i>
-        </div>
-    </nav>
-
-    <script src="admin-script.js" type="module"></script>
-</body>
-</html>
