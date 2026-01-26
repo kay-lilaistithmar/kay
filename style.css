@@ -85,6 +85,34 @@ body {
     box-shadow: 0 10px 30px rgba(74, 20, 140, 0.4);
 }
 
+/* أنميشن الماستر كارد الجديد */
+.master-card-container {
+    position: relative;
+    width: 250px;
+    height: 150px;
+    margin: 20px auto;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.master-card-bg {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #000000, #333333);
+    border-radius: 15px;
+    display: flex; justify-content: center; align-items: center;
+    position: relative;
+}
+
+.master-card-overlay {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 100%; /* يبدأ 100% ويقل بالتدريج */
+    background: rgba(30, 30, 46, 0.95); /* لون يطابق خلفية البطاقة لإخفائها */
+    z-index: 2;
+    transition: height 1s linear;
+    border-top: 2px solid var(--accent);
+}
+
 .daily-counter-box { margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; }
 .timer-anim { font-family: monospace; font-size: 1.2rem; color: var(--accent); font-weight: bold; margin-top: 5px; }
 .quick-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
@@ -110,7 +138,18 @@ button { width: 100%; padding: 12px; border: none; border-radius: 10px; backgrou
 .store-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
 .store-item { background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
 .store-img { height: 80px; width: 100%; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-bottom: 10px; }
-.asia { background: #d32f2f; } .zain { background: #000; } .pubg { background: #ff9800; }
+.asia { background: #d32f2f; } .zain { background: #000; } .pubg { background: #ff9800; } .ludo { background: #9c27b0; }
+
+.store-categories-container {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px;
+}
+.store-cat-item {
+    background: white; padding: 20px; border-radius: 15px; text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s;
+}
+.store-cat-item:active { transform: scale(0.95); }
+.cube-icon { font-size: 2rem; margin-bottom: 5px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
 
 /* الفريق والبروفايل */
 .invite-card { background: white; padding: 20px; border-radius: 15px; margin: 20px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
