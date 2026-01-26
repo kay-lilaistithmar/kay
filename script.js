@@ -1,5 +1,5 @@
 /* =========================================
-   Keey App - Logic V4.0 (Updated Withdrawals & Support)
+   Keey App - Logic V5.0 (Store & MasterCard Update)
    ========================================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -244,21 +244,19 @@ function startDataListener(userId) {
         }
     });
 
-    // 2. استماع لسجل السحوبات الخاص بالمستخدم (تم إزالة orderBy مؤقتاً لحل مشكلة التحميل)
+    // 2. استماع لسجل السحوبات
     const wQuery = query(collection(db, "withdrawals"), where("userId", "==", userId));
     onSnapshot(wQuery, (snapshot) => {
         const list = document.getElementById('transList');
-        if(list) list.innerHTML = ''; // مسح المحتوى القديم (بما في ذلك رسالة جاري التحميل)
+        if(list) list.innerHTML = ''; 
         
         let hasNotification = false;
         let transactions = [];
 
-        // تحويل البيانات إلى مصفوفة
         snapshot.forEach((doc) => {
             transactions.push(doc.data());
         });
 
-        // ترتيب البيانات يدوياً (الأحدث أولاً)
         transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if (transactions.length === 0) {
@@ -274,11 +272,11 @@ function startDataListener(userId) {
                 if(data.status === 'approved') {
                     statusText = 'تم الموافقة على السحبة من إدارة المالية keey';
                     statusColor = 'green';
-                    hasNotification = true; // تفعيل الجرس
+                    hasNotification = true;
                 } else if(data.status === 'rejected') {
                     statusText = 'تم الرفض راجع قسم الدعم';
                     statusColor = 'red';
-                    hasNotification = true; // تفعيل الجرس
+                    hasNotification = true;
                 } else {
                     statusText = 'قيد المراجعة';
                 }
@@ -299,11 +297,10 @@ function startDataListener(userId) {
             });
         }
         
-        // تفعيل شارة الإشعارات إذا كان هناك تغيير
         if(hasNotification) document.getElementById('notifBadge').style.display = 'flex';
     });
 
-    // 3. استماع لرسائل الدعم الفني (للإشعارات)
+    // 3. استماع لرسائل الدعم الفني
     onSnapshot(doc(db, "support_tickets", userId), (docSnap) => {
         if(docSnap.exists()) {
             const data = docSnap.data();
@@ -314,12 +311,13 @@ function startDataListener(userId) {
     });
 }
 
-// === منطق المؤقت والجمع اليدوي ===
+// === منطق المؤقت والجمع اليدوي (مع أنميشن الماستر كارد) ===
 function checkAndStartTimer() {
     if (timerInterval) clearInterval(timerInterval);
 
     const timerEl = document.getElementById('dailyTimer');
     const btnEl = document.getElementById('startMiningBtn');
+    const cardOverlay = document.getElementById('cardOverlay'); // طبقة الإخفاء
 
     function updateTimerDisplay() {
         let totalDailyProfit = 0;
@@ -337,12 +335,27 @@ function checkAndStartTimer() {
         const targetTime = lastTime + (24 * 60 * 60 * 1000); 
         const diff = targetTime - now;
 
+        // حساب نسبة التقدم (24 ساعة = 86400000 ملي ثانية)
+        const fullDay = 24 * 60 * 60 * 1000;
+        const elapsed = fullDay - diff;
+        let percentage = (elapsed / fullDay) * 100;
+        
+        // عكس النسبة لأننا نستخدم "ارتفاع" طبقة الإخفاء
+        // في البداية 100% (مخفي بالكامل) وفي النهاية 0% (ظاهر بالكامل)
+        let overlayHeight = 100 - percentage;
+        if(overlayHeight < 0) overlayHeight = 0;
+        
+        if(cardOverlay) {
+            cardOverlay.style.height = overlayHeight + "%";
+        }
+
         if (diff <= 0) {
             if(timerEl) timerEl.style.display = 'none';
             if(btnEl) {
                 btnEl.style.display = 'block';
                 btnEl.innerText = `⚡ اضغط لجمع ${totalDailyProfit} IQD وتشغيل العداد`;
             }
+            if(cardOverlay) cardOverlay.style.height = "0%"; // إظهار البطاقة بالكامل
             clearInterval(timerInterval);
         } else {
             if(btnEl) btnEl.style.display = 'none';
@@ -512,7 +525,6 @@ window.requestPlan = async function(planName, price, profit, planId, days) {
             });
 
             // 2. منطق الإحالة (Referral Logic) - 10/10 Rule
-            // يتم الاحتساب فقط إذا كان المستخدم لديه قائد ولم يتم احتسابه سابقاً كعضو نشط
             if(userData.referredBy && !userData.isActiveReferral) {
                 const leaderRef = doc(db, "users", userData.referredBy);
                 const leaderSnap = await getDoc(leaderRef);
@@ -521,20 +533,14 @@ window.requestPlan = async function(planName, price, profit, planId, days) {
                     const leaderData = leaderSnap.data();
                     const currentTeamSize = leaderData.activeTeamCount || 0;
 
-                    // إذا كان فريق القائد لم يكتمل (أقل من 10)
                     if(currentTeamSize < 10) {
                         const reward = price * 0.05; // 5% عمولة
-
                         await updateDoc(leaderRef, {
                             balance: increment(reward),
                             activeTeamCount: increment(1),
                             teamEarnings: increment(reward)
                         });
-
-                        // تحديث المستخدم الحالي لكي لا يحتسب مرة أخرى
-                        await updateDoc(userRef, {
-                            isActiveReferral: true
-                        });
+                        await updateDoc(userRef, { isActiveReferral: true });
                     }
                 }
             }
@@ -546,6 +552,153 @@ window.requestPlan = async function(planName, price, profit, planId, days) {
             window.showMsg("خطأ", "فشل العملية", "❌");
         }
     }
+}
+
+// === منطق المتجر الجديد (User Side) ===
+window.acceptStoreWarning = function() {
+    const chk = document.getElementById('dontShowStoreWarn').checked;
+    if(chk) localStorage.setItem('storeWarningSeen', 'true');
+    
+    document.getElementById('storeWarningModal').style.display = 'none';
+    
+    // تحميل التصنيفات بعد الموافقة
+    fetchStoreCategories();
+}
+
+window.fetchStoreCategories = async function() {
+    const list = document.getElementById('userStoreCategories');
+    list.innerHTML = 'جاري التحميل...';
+    
+    try {
+        const q = query(collection(db, "store_categories"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        
+        list.innerHTML = '';
+        if(snap.empty) { list.innerHTML = '<p style="text-align:center">لا توجد تصنيفات حالياً</p>'; return; }
+        
+        snap.forEach(doc => {
+            const cat = doc.data();
+            list.innerHTML += `
+            <div class="store-cat-item" onclick="fetchStoreProducts('${doc.id}', '${cat.name}')">
+                <div class="cube-icon">📦</div>
+                <h4>${cat.name}</h4>
+            </div>`;
+        });
+    } catch(e) { console.error(e); }
+}
+
+window.fetchStoreProducts = async function(catId, catName) {
+    const container = document.getElementById('userStoreProducts');
+    container.innerHTML = `<h3 style="color:var(--primary)">منتجات: ${catName}</h3><p>جاري التحميل...</p>`;
+    
+    try {
+        const q = query(collection(db, "store_products"), where("catId", "==", catId));
+        const snap = await getDocs(q);
+        
+        container.innerHTML = `<h3 style="color:var(--primary)">منتجات: ${catName}</h3>`;
+        if(snap.empty) { container.innerHTML += '<p>لا توجد منتجات هنا.</p>'; return; }
+        
+        snap.forEach(doc => {
+            const p = doc.data();
+            container.innerHTML += `
+            <div class="plan-box" style="margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0;">${p.name}</h4>
+                    <span style="color:green; font-weight:bold;">${p.price.toLocaleString()} IQD</span>
+                </div>
+                <button onclick="startPurchaseProcess('${doc.id}', '${p.name}', ${p.price}, '${p.inputLabel}')" style="margin-top:10px; background:var(--accent);">شراء الآن</button>
+            </div>`;
+        });
+    } catch(e) { console.error(e); }
+}
+
+window.startPurchaseProcess = function(prodId, prodName, price, inputLabel) {
+    // 1. العد التنازلي
+    let count = 3;
+    const alertBox = document.getElementById('customAlert');
+    alertBox.style.display = 'flex';
+    document.getElementById('alertIcon').innerText = '⏳';
+    document.getElementById('alertTitle').innerText = 'جاري التحقق...';
+    
+    const interval = setInterval(async () => {
+        document.getElementById('alertMsg').innerText = count;
+        count--;
+        
+        if(count < 0) {
+            clearInterval(interval);
+            alertBox.style.display = 'none';
+            
+            // 2. التحقق من الرصيد
+            if(userData.balance < price) {
+                window.showMsg("خطأ", "رصيدك غير كافي لإتمام العملية", "❌");
+                return;
+            }
+            
+            // 3. تأكيد الخصم
+            if(confirm(`سيتم خصم ${price} IQD من محفظتك. هل أنت موافق؟`)) {
+                // 4. طلب البيانات
+                const userInput = prompt(`يرجى إدخال ${inputLabel}:`);
+                if(!userInput) return;
+                
+                try {
+                    // خصم الرصيد
+                    await updateDoc(doc(db, "users", userData.id), {
+                        balance: increment(-price)
+                    });
+                    
+                    // إنشاء الطلب
+                    await addDoc(collection(db, "store_orders"), {
+                        userId: userData.id,
+                        userName: userData.name,
+                        userBalance: userData.balance - price,
+                        prodId, productName: prodName, price,
+                        inputLabel, userInput,
+                        status: 'pending',
+                        date: new Date().toISOString()
+                    });
+                    
+                    window.showMsg("تم الشراء", "تم إرسال طلبك بنجاح! راقب قسم المشتريات.", "✅");
+                    
+                } catch(e) {
+                    window.showMsg("خطأ", "فشل أثناء المعالجة", "❌");
+                }
+            }
+        }
+    }, 1000);
+}
+
+window.openPurchases = function() {
+    document.getElementById('purchasesModal').style.display = 'flex';
+    const list = document.getElementById('purchasesList');
+    list.innerHTML = 'جاري التحميل...';
+    
+    const q = query(collection(db, "store_orders"), where("userId", "==", userData.id));
+    onSnapshot(q, (snap) => {
+        list.innerHTML = '';
+        if(snap.empty) { list.innerHTML = '<p style="text-align:center; color:#999;">لا توجد مشتريات</p>'; return; }
+        
+        // ترتيب يدوي لأن الفايربيس يحتاج فهرس مركب مع where
+        let orders = [];
+        snap.forEach(d => orders.push(d.data()));
+        orders.sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        orders.forEach(o => {
+            let statusText = o.status === 'pending' ? 'قيد الانتظار' : 
+                             o.status === 'approved' ? 'تمت الموافقة ✅' : 'تم الرفض ❌ (راجع الدعم)';
+            let statusColor = o.status === 'pending' ? 'orange' : 
+                              o.status === 'approved' ? 'green' : 'red';
+            
+            list.innerHTML += `
+            <div style="background:#f9f9f9; padding:10px; margin-bottom:10px; border-radius:10px; border-right:4px solid ${statusColor};">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>${o.productName}</strong>
+                    <span>${o.price} IQD</span>
+                </div>
+                <div style="font-size:0.8rem; color:#666; margin:5px 0;">${new Date(o.date).toLocaleDateString()}</div>
+                <div style="color:${statusColor}; font-weight:bold; font-size:0.9rem;">${statusText}</div>
+            </div>`;
+        });
+    });
 }
 
 // === السحب والإيداع ===
@@ -685,6 +838,16 @@ window.sendSupportMessage = async function() {
 
 // === التنقل بين التبويبات ===
 window.switchTab = function(tabId) {
+    // منطق التحذير عند فتح المتجر
+    if (tabId === 'store') {
+        const seen = localStorage.getItem('storeWarningSeen');
+        if (!seen) {
+            document.getElementById('storeWarningModal').style.display = 'flex';
+        } else {
+            fetchStoreCategories(); // تحميل التصنيفات إذا سبق الموافقة
+        }
+    }
+
     document.querySelectorAll('.tab-content').forEach(el => {
         el.style.display = 'none';
         el.classList.remove('active');
@@ -698,12 +861,10 @@ window.switchTab = function(tabId) {
     
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     
-    // ترتيب الأزرار الجديد:
-    // 0:حسابي, 1:الفريق, 2:الرئيسية, 3:Reels, 4:المحفظة
     if(tabId === 'profile') document.querySelectorAll('.nav-item')[0].classList.add('active');
     else if(tabId === 'team') document.querySelectorAll('.nav-item')[1].classList.add('active');
     else if(tabId === 'home') document.querySelector('.center-btn').classList.add('active');
-    else if(tabId === 'reels') document.querySelectorAll('.nav-item')[3].classList.add('active');
+    else if(tabId === 'store') document.querySelectorAll('.nav-item')[3].classList.add('active');
     else if(tabId === 'wallet') document.querySelectorAll('.nav-item')[4].classList.add('active');
 }
 
