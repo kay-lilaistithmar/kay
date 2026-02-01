@@ -321,16 +321,20 @@ function checkAndStartTimer() {
 
     function updateTimerDisplay() {
         let totalDailyProfit = 0;
+        const now = Date.now();
+        
         if(userData.plans) {
             userData.plans.forEach(p => {
-                if(p.status === 'active') totalDailyProfit += (p.profit || 0);
+                // تعديل لعرض الأرباح فقط للباقات غير المنتهية
+                if(p.status === 'active' && p.expiryDate > now) {
+                    totalDailyProfit += (p.profit || 0);
+                }
             });
         }
         if(document.getElementById('totalDailyProfit')) {
             document.getElementById('totalDailyProfit').innerText = totalDailyProfit.toLocaleString();
         }
 
-        const now = Date.now();
         const lastTime = userData.lastProfitTime || 0;
         const targetTime = lastTime + (24 * 60 * 60 * 1000); 
         const diff = targetTime - now;
@@ -376,27 +380,55 @@ function checkAndStartTimer() {
     timerInterval = setInterval(updateTimerDisplay, 1000);
 }
 
+// === دالة الجمع اليدوي (تم تعديلها لتمنع الربح الفوري وتعطي الربح في النهاية فقط) ===
 window.manualClaimAndStart = async function() {
     let totalProfit = 0;
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000; // 24 ساعة بالملي ثانية
+
     if(userData.plans) {
         userData.plans.forEach(p => {
-            if(p.status === 'active') totalProfit += (p.profit || 0);
-        });
-    }
+            const planPurchaseTime = new Date(p.date).getTime();
+            
+            // 1. هل الباقة نشطة؟
+            const isActive = p.status === 'active';
 
-    if(totalProfit === 0) {
-        return window.showMsg("تنبيه", "ليس لديك عدادات نشطة للجمع.", "⚠️");
+            // 2. هل انتهت صلاحية الباقة كلياً؟
+            const isNotExpired = p.expiryDate > now;
+
+            // 3. الشرط الجديد: هل مر 24 ساعة كاملة على شراء هذه الباقة؟
+            const isOldEnough = (now - planPurchaseTime) >= oneDayMs;
+
+            if(isActive && isNotExpired && isOldEnough) {
+                totalProfit += (p.profit || 0);
+            }
+        });
     }
 
     try {
         const userRef = doc(db, "users", userData.id);
         
-        await updateDoc(userRef, {
-            balance: increment(totalProfit),
-            lastProfitTime: Date.now()
-        });
+        // إذا كان الربح 0 (إما بداية تشغيل أو باقات جديدة أو لا يوجد باقات)
+        if(totalProfit === 0) {
+            const hasActivePlans = userData.plans && userData.plans.some(p => p.status === 'active' && p.expiryDate > now);
+            
+            if (!hasActivePlans) {
+                 return window.showMsg("تنبيه", "ليس لديك عدادات نشطة للجمع.", "⚠️");
+            }
 
-        window.showMsg("مبروك", `تم جمع ${totalProfit} IQD وبدأ العداد ليوم جديد!`, "💰");
+            // نقوم فقط بإعادة تشغيل العداد بدون إضافة رصيد
+            await updateDoc(userRef, {
+                lastProfitTime: Date.now()
+            });
+            window.showMsg("تم التشغيل", "بدأ العداد بنجاح! ستتم إضافة الأرباح بعد اكتمال 24 ساعة.", "⏳");
+        } else {
+            // إضافة الربح للمحفظة وإعادة تشغيل العداد
+            await updateDoc(userRef, {
+                balance: increment(totalProfit), 
+                lastProfitTime: Date.now()
+            });
+            window.showMsg("مبروك", `تم استلام أرباح اليوم السابق: ${totalProfit} IQD وبدأ عداد جديد.`, "💰");
+        }
         
     } catch (e) {
         console.error("Claim error:", e);
